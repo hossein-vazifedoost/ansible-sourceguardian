@@ -1,0 +1,80 @@
+---
+- name: Create temp and log directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ loaders_dir }}"
+    - "/var/log"
+
+- name: Touch log file
+  file:
+    path: "{{ log_file }}"
+    state: touch
+    mode: '0644'
+
+- name: Download SourceGuardian loaders
+  get_url:
+    url: "{{ loaders_url }}"
+    dest: "{{ loaders_zip }}"
+    mode: '0644'
+
+- name: Unzip SourceGuardian loaders
+  unarchive:
+    src: "{{ loaders_zip }}"
+    dest: "{{ loaders_dir }}"
+    remote_src: yes
+
+- name: Check and copy PHP modules
+  block:
+    - name: Stat the ixed file
+      stat:
+        path: "{{ loaders_dir }}/ixed.{{ item.version }}.lin"
+      register: ixed_file
+
+    - name: Stat the PHP extension path
+      stat:
+        path: "/opt/alt/php{{ item.short }}/usr/lib64/php/modules/"
+      register: php_module_path
+
+    - name: Copy module if exists
+      copy:
+        src: "{{ loaders_dir }}/ixed.{{ item.version }}.lin"
+        dest: "/opt/alt/php{{ item.short }}/usr/lib64/php/modules/ixed.{{ item.version }}.lin"
+        remote_src: yes
+        mode: '0644'
+      when: ixed_file.stat.exists and php_module_path.stat.isdir
+
+    - name: Log copy success
+      lineinfile:
+        path: "{{ log_file }}"
+        line: "[{{ ansible_date_time.iso8601 }}] ✔ Copied ixed.{{ item.version }}.lin to /opt/alt/php{{ item.short }}/usr/lib64/php/modules/"
+        create: yes
+      when: ixed_file.stat.exists and php_module_path.stat.isdir
+
+    - name: Log skip/missing
+      lineinfile:
+        path: "{{ log_file }}"
+        line: "[{{ ansible_date_time.iso8601 }}] ⚠ Skipped ixed.{{ item.version }}.lin — file or path missing."
+        create: yes
+      when: not (ixed_file.stat.exists and php_module_path.stat.isdir)
+
+  loop: "{{ php_versions }}"
+
+- name: Update cagefs
+  block:
+    - name: cagefsctl --force-update
+      command: cagefsctl --force-update
+
+    - name: cagefsctl --disable-all
+      command: cagefsctl --disable-all
+
+    - name: cagefsctl --enable-all
+      command: cagefsctl --enable-all
+
+    - name: Log cagefs update
+      lineinfile:
+        path: "{{ log_file }}"
+        line: "[{{ ansible_date_time.iso8601 }}] 🔄 CageFS updated successfully"
+        create: yes

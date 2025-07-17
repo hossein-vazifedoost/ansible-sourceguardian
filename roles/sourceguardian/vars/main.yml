@@ -1,0 +1,15 @@
+log_file: "/var/log/sourceguardian.log"
+loaders_url: "https://www.sourceguardian.com/loaders/download/loaders.linux-x86_64.zip"
+loaders_zip: "/usr/local/src/sourceguardian/loaders.linux-x86_64.zip"
+loaders_dir: "/usr/local/src/sourceguardian"
+php_versions:
+  - { short: "70", version: "7.0" }
+  - { short: "71", version: "7.1" }
+  - { short: "72", version: "7.2" }
+  - { short: "73", version: "7.3" }
+  - { short: "74", version: "7.4" }
+  - { short: "80", version: "8.0" }
+  - { short: "81", version: "8.1" }
+  - { short: "82", version: "8.2" }
+  - { short: "83", version: "8.3" }
+  - { short: "84", version: "8.4" }
